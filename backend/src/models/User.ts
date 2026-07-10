@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   company: String,
   plan: { type: String, default: 'free', enum: ['free', 'starter', 'professional', 'enterprise'] },
   subscriptionId: String,
+  stripeCustomerId: String,
   monthlyUsage: { type: Number, default: 0 },
   monthlyLimit: { type: Number, default: 5 },
   apiKey: String,

@@ -38,6 +38,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [showGeneratorModal, setShowGeneratorModal] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(
+    null
+  );
   const [formData, setFormData] = useState({
     brandName: '',
     primaryColor: '#3B82F6',
@@ -57,7 +60,38 @@ export default function Dashboard() {
     }
     fetchUserProfile();
     fetchDesigns();
+    handleCheckoutRedirect();
   }, []);
+
+  const handleCheckoutRedirect = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get('checkout');
+    if (!checkout) return;
+
+    // Clear the query params so refreshing doesn't re-trigger this.
+    window.history.replaceState({}, '', '/dashboard');
+
+    if (checkout === 'cancelled') {
+      setCheckoutMessage({ type: 'error', text: 'Checkout was cancelled.' });
+      return;
+    }
+
+    const sessionId = params.get('session_id');
+    if (checkout === 'success' && sessionId) {
+      try {
+        await api.get(`/api/billing/confirm?session_id=${encodeURIComponent(sessionId)}`, {
+          headers: authHeader(),
+        });
+        setCheckoutMessage({ type: 'success', text: 'Your plan has been upgraded!' });
+        fetchUserProfile();
+      } catch (error: any) {
+        setCheckoutMessage({
+          type: 'error',
+          text: error.response?.data?.error || 'Could not confirm your payment.',
+        });
+      }
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -137,6 +171,17 @@ export default function Dashboard() {
 
   return (
     <div className="flex-1 p-8 max-w-6xl mx-auto w-full">
+      {checkoutMessage && (
+        <div
+          className={`mb-6 px-4 py-3 rounded-lg text-sm ${
+            checkoutMessage.type === 'success'
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}
+        >
+          {checkoutMessage.text}
+        </div>
+      )}
       <div className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-semibold">Design Automation Studio</h1>

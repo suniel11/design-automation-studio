@@ -20,7 +20,7 @@ MVP flow: sign up → fill in brand + headline → AI (Anthropic) drafts headlin
 - **DB:** MongoDB, hosted as a Railway-managed service in the same project (not Atlas — see note below)
 - **Auth:** JWT + bcrypt
 - **AI:** Anthropic API (design copy generation)
-- **Payments:** Stripe, test mode only — `/api/billing/subscribe` exists but isn't wired to any UI yet
+- **Payments:** Stripe, test mode only — real Checkout Session flow (`POST /api/billing/checkout`, `GET /api/billing/confirm`), wired to the pricing page buttons. No webhooks; `/confirm` verifies the session server-side on the success redirect instead.
 
 ## Project structure
 

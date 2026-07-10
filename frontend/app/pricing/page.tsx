@@ -1,8 +1,13 @@
-import Link from 'next/link';
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Nav from '@/components/Nav';
+import { api, authHeader } from '@/lib/api';
 
 const plans = [
   {
+    id: 'free',
     name: 'Free',
     price: '$0',
     description: 'Perfect for testing',
@@ -11,6 +16,7 @@ const plans = [
     highlighted: false,
   },
   {
+    id: 'starter',
     name: 'Starter',
     price: '$29',
     description: 'For growing teams',
@@ -24,6 +30,7 @@ const plans = [
     highlighted: false,
   },
   {
+    id: 'professional',
     name: 'Professional',
     price: '$99',
     description: 'For agencies & teams',
@@ -37,6 +44,7 @@ const plans = [
     highlighted: true,
   },
   {
+    id: 'enterprise',
     name: 'Enterprise',
     price: 'Custom',
     description: 'For large organizations',
@@ -47,6 +55,42 @@ const plans = [
 ];
 
 export default function PricingPage() {
+  const router = useRouter();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  const handlePlanClick = async (planId: string) => {
+    if (planId === 'free') {
+      router.push('/signup');
+      return;
+    }
+
+    if (planId === 'enterprise') {
+      window.location.href =
+        'mailto:sales@designautomationstudio.com?subject=Enterprise%20plan%20inquiry';
+      return;
+    }
+
+    if (!localStorage.getItem('token')) {
+      router.push('/signup');
+      return;
+    }
+
+    setError('');
+    setLoadingPlan(planId);
+    try {
+      const response = await api.post(
+        '/api/billing/checkout',
+        { planId },
+        { headers: authHeader() }
+      );
+      window.location.href = response.data.url;
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to start checkout');
+      setLoadingPlan(null);
+    }
+  };
+
   return (
     <>
       <Nav />
@@ -57,6 +101,7 @@ export default function PricingPage() {
             <p className="mt-4 text-lg text-gray-600">
               Generate unlimited branded designs. Pay only for what you use.
             </p>
+            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -78,16 +123,17 @@ export default function PricingPage() {
                   <span className="text-4xl font-bold">{plan.price}</span>
                   {plan.price !== 'Custom' && <span className="text-gray-500 text-sm">/month</span>}
                 </div>
-                <Link
-                  href="/signup"
-                  className={`text-center rounded-lg py-2.5 font-semibold mb-6 ${
+                <button
+                  onClick={() => handlePlanClick(plan.id)}
+                  disabled={loadingPlan === plan.id}
+                  className={`text-center rounded-lg py-2.5 font-semibold mb-6 disabled:opacity-60 ${
                     plan.highlighted
                       ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  {plan.cta}
-                </Link>
+                  {loadingPlan === plan.id ? 'Redirecting…' : plan.cta}
+                </button>
                 <ul className="flex flex-col gap-2 text-sm text-gray-700">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2">
