@@ -52,7 +52,10 @@ Line 3: one sentence of body copy (max 25 words)`;
     }
   );
 
-  const text: string = response.data?.content?.[0]?.text || '';
+  // The model may emit a `thinking` block before the `text` block, so find
+  // the text block by type rather than assuming it's content[0].
+  const textBlock = (response.data?.content || []).find((block: any) => block.type === 'text');
+  const text: string = textBlock?.text || '';
   const lines = text.split('\n').map((l: string) => l.trim()).filter(Boolean);
 
   return {
